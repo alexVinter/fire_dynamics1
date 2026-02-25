@@ -15,7 +15,7 @@ const TABS = [
 
 type TabKey = (typeof TABS)[number]["key"];
 
-const TAB_CONTENT: Record<TabKey, () => JSX.Element> = {
+const TAB_CONTENT: Record<TabKey, () => React.ReactNode> = {
   techniques: AdminTechniques,
   aliases: AdminAliases,
   zones: AdminZones,
