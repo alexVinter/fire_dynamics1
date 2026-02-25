@@ -11,6 +11,14 @@ from app.models.quote_result_line import QuoteResultLine
 from app.models.sku import SKU
 from app.models.user import User
 
+_INJECTION_CHARS = frozenset("=+-@")
+
+
+def _safe(value: str) -> str:
+    if value and value[0] in _INJECTION_CHARS:
+        return "'" + value
+    return value
+
 
 def xlsx_export(db: Session, quote_id: int) -> bytes:
     quote = db.get(Quote, quote_id)
@@ -38,7 +46,7 @@ def xlsx_export(db: Session, quote_id: int) -> bytes:
     bold = Font(bold=True)
     ws.append(["Дата", date.today().isoformat()])
     ws.append(["КП №", quote_id])
-    ws.append(["Менеджер", manager_name])
+    ws.append(["Менеджер", _safe(manager_name)])
     for row in ws.iter_rows(min_row=1, max_row=3, min_col=1, max_col=1):
         for cell in row:
             cell.font = bold
@@ -54,11 +62,11 @@ def xlsx_export(db: Session, quote_id: int) -> bytes:
     for ln in lines:
         s = skus.get(ln.sku_id)
         ws.append([
-            s.code if s else str(ln.sku_id),
-            s.name if s else "",
-            s.unit if s else "",
+            _safe(s.code if s else str(ln.sku_id)),
+            _safe(s.name if s else ""),
+            _safe(s.unit if s else ""),
             ln.qty,
-            ln.note or "",
+            _safe(ln.note or ""),
         ])
 
     ws.column_dimensions["A"].width = 16

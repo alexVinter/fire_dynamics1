@@ -1,5 +1,6 @@
 import json
 from datetime import date, datetime
+from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from pydantic import BaseModel, Field, field_validator
@@ -404,7 +405,7 @@ def change_status(
 
 class LineAvailability(BaseModel):
     line_id: int
-    availability_status: str
+    availability_status: Literal["in_stock", "to_order", "absent"]
     availability_comment: str | None = None
 
 

@@ -1,6 +1,7 @@
 import { useState } from "react";
-import AuthGuard, { useMenuItems } from "./auth/AuthGuard";
+import AuthGuard from "./auth/AuthGuard";
 import { useAuth } from "./auth/useAuth";
+import AppShell from "./layout/AppShell";
 import AdminPanel from "./pages/admin/AdminPanel";
 import CreateQuote from "./pages/CreateQuote";
 import Dashboard from "./pages/Dashboard";
@@ -26,47 +27,81 @@ export default function App() {
     return <AuthGuard user={user} loading={loading} onLogin={login}><></></AuthGuard>;
   }
 
+  const { breadcrumbs, title, subtitle } = pageHeader(page, openQuoteId, editingQuoteId);
+
   return (
-    <>
-      <header className="app-header">
-        <span className="app-header__logo">Динамика Огня</span>
-        <span className="app-header__spacer" />
-        <span className="app-header__user hide-mobile">
-          {user.login} <span className="text-secondary">({user.role})</span>
-        </span>
-        <button className="btn btn--ghost btn--sm" onClick={logout}>Выйти</button>
-      </header>
-      <Nav role={user.role} current={page} onNav={handleNav} />
-      <main className="app-main">
-        <PageContent
-          page={page}
-          role={user.role}
-          openQuoteId={openQuoteId}
-          onOpenQuote={setOpenQuoteId}
-          editingQuoteId={editingQuoteId}
-          onEditQuote={setEditingQuoteId}
-          onNav={handleNav}
-        />
-      </main>
-    </>
+    <AppShell
+      user={user}
+      currentPage={page}
+      onNav={(p) => handleNav(p as Page)}
+      onLogout={logout}
+      breadcrumbs={breadcrumbs}
+      title={title}
+      subtitle={subtitle}
+    >
+      <PageContent
+        page={page}
+        role={user.role}
+        openQuoteId={openQuoteId}
+        onOpenQuote={setOpenQuoteId}
+        editingQuoteId={editingQuoteId}
+        onEditQuote={setEditingQuoteId}
+        onNav={handleNav}
+      />
+    </AppShell>
   );
 }
 
-function Nav({ role, current, onNav }: { role: string; current: Page; onNav: (p: Page) => void }) {
-  const items = useMenuItems(role);
-  return (
-    <nav className="app-nav">
-      {items.map((item) => (
-        <button
-          key={item.key}
-          className={`app-nav__item${current === item.key ? " app-nav__item--active" : ""}`}
-          onClick={() => onNav(item.key as Page)}
-        >
-          {item.label}
-        </button>
-      ))}
-    </nav>
-  );
+function pageHeader(page: Page, openId: number | null, editId: number | null) {
+  const root = "Динамика Огня";
+
+  if (page === "dashboard") {
+    if (editId !== null) {
+      return {
+        breadcrumbs: [root, "История КП", `КП #${editId}`],
+        title: "Редактирование КП",
+        subtitle: `Черновик КП #${editId}`,
+      };
+    }
+    if (openId !== null) {
+      return {
+        breadcrumbs: [root, "История КП"],
+        title: `КП #${openId}`,
+        subtitle: undefined,
+      };
+    }
+    return {
+      breadcrumbs: [root],
+      title: "История КП",
+      subtitle: "Все коммерческие предложения",
+    };
+  }
+
+  if (page === "calc") {
+    return {
+      breadcrumbs: [root],
+      title: "Новый расчёт",
+      subtitle: "Подбор комплектации системы пожаротушения",
+    };
+  }
+
+  if (page === "admin") {
+    return {
+      breadcrumbs: [root],
+      title: "Админ-панель",
+      subtitle: "Управление справочниками и пользователями",
+    };
+  }
+
+  if (page === "warehouse") {
+    return {
+      breadcrumbs: [root],
+      title: "Проверка склада",
+      subtitle: "КП на проверке наличия",
+    };
+  }
+
+  return { breadcrumbs: [root], title: "", subtitle: undefined };
 }
 
 function PageContent({
@@ -98,7 +133,7 @@ function PageContent({
         />
       );
     }
-    return <Dashboard onOpenQuote={onOpenQuote} />;
+    return <Dashboard onOpenQuote={onOpenQuote} onNav={onNav} />;
   }
   if (page === "calc") {
     return <CreateQuote onSaved={(id) => { onOpenQuote(id); onNav("dashboard"); }} />;

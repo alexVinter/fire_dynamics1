@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
 import { apiGet, apiPatch, apiPost } from "../api/client";
+import Badge from "../ui/Badge";
+import Button from "../ui/Button";
+import Card from "../ui/Card";
+import { Table, Th, Td, Tr } from "../ui/Table";
+import Tabs from "../ui/Tabs";
+import { statusLabel, statusBadgeColor, availLabel, availBadgeColor } from "../utils/status";
 
 interface QuoteItemOut {
   id: number;
@@ -30,6 +36,8 @@ interface ResultLine {
   sku_unit: string | null;
   qty: number;
   note: string | null;
+  availability_status: string | null;
+  availability_comment: string | null;
 }
 
 interface CalcResult {
@@ -41,6 +49,11 @@ interface CalcResult {
 const EDITABLE = new Set(["draft", "rework"]);
 const CALCULABLE = new Set(["draft", "rework"]);
 const HAS_RESULT = new Set(["calculated", "approved", "warehouse_check", "rework", "confirmed"]);
+
+const DETAIL_TABS = [
+  { key: "spec", label: "Спецификация" },
+  { key: "warehouse", label: "Комментарии склада" },
+];
 
 interface Props {
   quoteId: number;
@@ -54,6 +67,7 @@ export default function QuoteDetail({ quoteId, role, onBack, onEdit }: Props) {
   const [resultLines, setResultLines] = useState<ResultLine[]>([]);
   const [calculating, setCalculating] = useState(false);
   const [error, setError] = useState("");
+  const [tab, setTab] = useState("spec");
 
   function loadQuote() {
     apiGet<QuoteOut>(`/quotes/${quoteId}`).then(setQuote).catch(() => setQuote(null));
@@ -117,90 +131,185 @@ export default function QuoteDetail({ quoteId, role, onBack, onEdit }: Props) {
     }
   }
 
-  if (!quote) return <p>Загрузка…</p>;
+  const fmtDate = (iso: string) => new Date(iso).toLocaleString("ru");
+
+  if (!quote) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <p className="text-sm text-[var(--color-text-secondary)]">Загрузка…</p>
+      </div>
+    );
+  }
+
+  const warehouseLines = resultLines.filter((l) => l.availability_status || l.availability_comment);
 
   return (
-    <div>
-      <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-        <button onClick={onBack}>← Назад</button>
+    <div className="flex flex-col gap-5">
+      {/* Summary card */}
+      <Card>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div>
+            <span className="text-xs font-medium uppercase tracking-wider text-[var(--color-text-secondary)]">Статус</span>
+            <div className="mt-1">
+              <Badge color={statusBadgeColor(quote.status)}>
+                {statusLabel(quote.status)}
+              </Badge>
+            </div>
+          </div>
+          <div>
+            <span className="text-xs font-medium uppercase tracking-wider text-[var(--color-text-secondary)]">Клиент</span>
+            <p className="mt-1 text-sm font-medium">{quote.customer_name || "—"}</p>
+          </div>
+          <div>
+            <span className="text-xs font-medium uppercase tracking-wider text-[var(--color-text-secondary)]">Зоны</span>
+            <p className="mt-1 text-sm">{quote.zones.length ? quote.zones.join(", ") : "—"}</p>
+          </div>
+          <div>
+            <span className="text-xs font-medium uppercase tracking-wider text-[var(--color-text-secondary)]">Создано</span>
+            <p className="mt-1 text-sm">{fmtDate(quote.created_at)}</p>
+          </div>
+          <div>
+            <span className="text-xs font-medium uppercase tracking-wider text-[var(--color-text-secondary)]">Обновлено</span>
+            <p className="mt-1 text-sm">{fmtDate(quote.updated_at)}</p>
+          </div>
+          {quote.comment && (
+            <div>
+              <span className="text-xs font-medium uppercase tracking-wider text-[var(--color-text-secondary)]">Комментарий</span>
+              <p className="mt-1 text-sm">{quote.comment}</p>
+            </div>
+          )}
+        </div>
+      </Card>
+
+      {/* Actions */}
+      <div className="flex flex-wrap items-center gap-2">
+        <Button variant="ghost" size="sm" onClick={onBack}>
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+          </svg>
+          Назад
+        </Button>
+
+        <div className="hidden h-5 w-px bg-[var(--color-border)] sm:block" />
+
         {EDITABLE.has(quote.status) && (
-          <button onClick={() => onEdit(quote.id)}>Редактировать</button>
+          <Button variant="secondary" size="sm" onClick={() => onEdit(quote.id)}>
+            Редактировать
+          </Button>
         )}
         {CALCULABLE.has(quote.status) && (
-          <button onClick={handleCalculate} disabled={calculating}>
+          <Button variant="primary" size="sm" onClick={handleCalculate} disabled={calculating}>
             {calculating ? "Расчёт…" : "Рассчитать"}
-          </button>
+          </Button>
+        )}
+        {resultLines.length > 0 && (
+          <Button variant="secondary" size="sm" onClick={handleExportXlsx}>
+            Экспорт в Excel
+          </Button>
         )}
       </div>
 
-      <h2>КП #{quote.id}</h2>
-      <p>Статус: <b>{quote.status}</b> | Клиент: {quote.customer_name || "—"}</p>
-      <p>Зоны: {quote.zones.length ? quote.zones.join(", ") : "—"}</p>
-      {quote.comment && <p>Комментарий: {quote.comment}</p>}
-      {error && <p style={{ color: "red" }}>{error}</p>}
+      {error && (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-[var(--color-danger)]">
+          {error}
+        </div>
+      )}
 
-      <h3>Позиции техники ({quote.items.length})</h3>
-      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14, marginBottom: 24 }}>
-        <thead>
-          <tr>
-            {["#", "Technique ID", "Двигатель", "Год", "Кол-во"].map((h) => (
-              <th key={h} style={{ textAlign: "left", borderBottom: "1px solid #ccc", padding: "4px 8px" }}>{h}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {quote.items.map((it, idx) => (
-            <tr key={it.id} style={{ borderBottom: "1px solid #eee" }}>
-              <td style={{ padding: "4px 8px" }}>{idx + 1}</td>
-              <td style={{ padding: "4px 8px" }}>{it.technique_id}</td>
-              <td style={{ padding: "4px 8px" }}>{it.engine_text || (it.engine_option_id ? `option #${it.engine_option_id}` : "—")}</td>
-              <td style={{ padding: "4px 8px" }}>{it.year ?? "—"}</td>
-              <td style={{ padding: "4px 8px" }}>{it.qty}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
+      {/* Tabs: spec / warehouse */}
       {(resultLines.length > 0 || HAS_RESULT.has(quote.status)) && (
         <>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <h3 style={{ margin: 0 }}>Спецификация ({resultLines.length} позиций)</h3>
-            {resultLines.length > 0 && (
-              <button onClick={handleExportXlsx}>Экспорт в Excel</button>
-            )}
-          </div>
-          {resultLines.length === 0
-            ? <p style={{ color: "#888" }}>Нет результатов расчёта</p>
-            : (
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
-                <thead>
-                  <tr>
-                    {["Код", "Название", "Ед.", "Кол-во", "Заметка"].map((h) => (
-                      <th key={h} style={{ textAlign: "left", borderBottom: "1px solid #ccc", padding: "4px 8px" }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {resultLines.map((ln) => (
-                    <tr key={ln.id} style={{ borderBottom: "1px solid #eee" }}>
-                      <td style={{ padding: "4px 8px" }}>{ln.sku_code ?? ln.sku_id}</td>
-                      <td style={{ padding: "4px 8px" }}>{ln.sku_name ?? "—"}</td>
-                      <td style={{ padding: "4px 8px" }}>{ln.sku_unit ?? "—"}</td>
-                      <td style={{ padding: "4px 8px" }}>
-                        {role === "admin" ? (
-                          <input
-                            type="number"
-                            min={0}
-                            value={ln.qty}
-                            onChange={(e) => handleLineQtyChange(ln, Number(e.target.value))}
-                            style={{ width: 60, padding: 2 }}
-                          />
-                        ) : (
-                          ln.qty
-                        )}
-                      </td>
-                      <td style={{ padding: "4px 8px" }}>
+          <Tabs tabs={DETAIL_TABS} active={tab} onChange={setTab} />
+
+          {tab === "spec" && (
+            <>
+              {resultLines.length === 0 ? (
+                <Card className="py-10 text-center">
+                  <p className="text-[var(--color-text-secondary)]">Нет результатов расчёта</p>
+                  {CALCULABLE.has(quote.status) && (
+                    <p className="mt-1 text-sm text-[var(--color-text-secondary)]">Нажмите «Рассчитать» для формирования спецификации</p>
+                  )}
+                </Card>
+              ) : (
+                <>
+                  {/* Desktop table */}
+                  <div className="hidden sm:block">
+                    <Table>
+                      <thead>
+                        <tr>
+                          <Th>Код</Th>
+                          <Th>Название</Th>
+                          <Th>Ед.</Th>
+                          <Th>Кол-во</Th>
+                          <Th>Заметка</Th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {resultLines.map((ln) => (
+                          <Tr key={ln.id}>
+                            <Td className="whitespace-nowrap font-medium">{ln.sku_code ?? ln.sku_id}</Td>
+                            <Td>{ln.sku_name ?? "—"}</Td>
+                            <Td className="text-[var(--color-text-secondary)]">{ln.sku_unit ?? "—"}</Td>
+                            <Td>
+                              {role === "admin" ? (
+                                <input
+                                  type="number"
+                                  min={0}
+                                  className="w-20 rounded-lg border border-[var(--color-border)] px-2 py-1 text-sm focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/20"
+                                  value={ln.qty}
+                                  onChange={(e) => handleLineQtyChange(ln, Number(e.target.value))}
+                                />
+                              ) : (
+                                <span className="font-medium">{ln.qty}</span>
+                              )}
+                            </Td>
+                            <Td>
+                              <input
+                                className="w-full rounded-lg border border-[var(--color-border)] px-2 py-1 text-sm focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/20"
+                                value={ln.note ?? ""}
+                                placeholder="заметка…"
+                                onBlur={(e) => {
+                                  const val = e.target.value;
+                                  if (val !== (ln.note ?? "")) handleLineNoteChange(ln, val);
+                                }}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setResultLines((prev) => prev.map((l) => (l.id === ln.id ? { ...l, note: val } : l)));
+                                }}
+                              />
+                            </Td>
+                          </Tr>
+                        ))}
+                      </tbody>
+                    </Table>
+                  </div>
+
+                  {/* Mobile cards */}
+                  <div className="flex flex-col gap-3 sm:hidden">
+                    {resultLines.map((ln) => (
+                      <Card key={ln.id} className="flex flex-col gap-2">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <p className="text-sm font-semibold">{ln.sku_name ?? "—"}</p>
+                            <p className="text-xs text-[var(--color-text-secondary)]">
+                              {ln.sku_code ?? ln.sku_id} · {ln.sku_unit ?? "—"}
+                            </p>
+                          </div>
+                          {role === "admin" ? (
+                            <input
+                              type="number"
+                              min={0}
+                              className="w-16 rounded-lg border border-[var(--color-border)] px-2 py-1 text-right text-sm font-medium focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/20"
+                              value={ln.qty}
+                              onChange={(e) => handleLineQtyChange(ln, Number(e.target.value))}
+                            />
+                          ) : (
+                            <span className="rounded-lg bg-gray-100 px-2.5 py-1 text-sm font-semibold">
+                              {ln.qty}
+                            </span>
+                          )}
+                        </div>
                         <input
+                          className="w-full rounded-lg border border-[var(--color-border)] px-2 py-1.5 text-sm focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/20"
                           value={ln.note ?? ""}
                           placeholder="заметка…"
                           onBlur={(e) => {
@@ -211,20 +320,79 @@ export default function QuoteDetail({ quoteId, role, onBack, onEdit }: Props) {
                             const val = e.target.value;
                             setResultLines((prev) => prev.map((l) => (l.id === ln.id ? { ...l, note: val } : l)));
                           }}
-                          style={{ width: "100%", padding: 2, boxSizing: "border-box" }}
                         />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
+                      </Card>
+                    ))}
+                  </div>
+                </>
+              )}
+            </>
+          )}
+
+          {tab === "warehouse" && (
+            <>
+              {warehouseLines.length === 0 ? (
+                <Card className="py-10 text-center">
+                  <p className="text-[var(--color-text-secondary)]">Нет комментариев склада</p>
+                  <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
+                    Комментарии появятся после проверки склада
+                  </p>
+                </Card>
+              ) : (
+                <>
+                  {/* Desktop */}
+                  <div className="hidden sm:block">
+                    <Table>
+                      <thead>
+                        <tr>
+                          <Th>Код</Th>
+                          <Th>Название</Th>
+                          <Th>Кол-во</Th>
+                          <Th>Наличие</Th>
+                          <Th>Комментарий склада</Th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {warehouseLines.map((ln) => (
+                          <Tr key={ln.id}>
+                            <Td className="font-medium">{ln.sku_code ?? ln.sku_id}</Td>
+                            <Td>{ln.sku_name ?? "—"}</Td>
+                            <Td>{ln.qty}</Td>
+                            <Td>
+                              <Badge color={availBadgeColor(ln.availability_status ?? "")}>
+                                {availLabel(ln.availability_status ?? "—")}
+                              </Badge>
+                            </Td>
+                            <Td className="text-sm">{ln.availability_comment || "—"}</Td>
+                          </Tr>
+                        ))}
+                      </tbody>
+                    </Table>
+                  </div>
+
+                  {/* Mobile */}
+                  <div className="flex flex-col gap-3 sm:hidden">
+                    {warehouseLines.map((ln) => (
+                      <Card key={ln.id} className="flex flex-col gap-1.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-semibold">{ln.sku_name ?? "—"}</span>
+                          <Badge color={availBadgeColor(ln.availability_status ?? "")}>
+                            {availLabel(ln.availability_status ?? "—")}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-[var(--color-text-secondary)]">{ln.sku_code} · {ln.qty} {ln.sku_unit}</p>
+                        {ln.availability_comment && (
+                          <p className="text-sm text-[var(--color-text-secondary)]">{ln.availability_comment}</p>
+                        )}
+                      </Card>
+                    ))}
+                  </div>
+                </>
+              )}
+            </>
+          )}
         </>
       )}
-
-      <p style={{ fontSize: 12, color: "#888", marginTop: 12 }}>
-        Создано: {new Date(quote.created_at).toLocaleString("ru")} | Обновлено: {new Date(quote.updated_at).toLocaleString("ru")}
-      </p>
     </div>
   );
 }

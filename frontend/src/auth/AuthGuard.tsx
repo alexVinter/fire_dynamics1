@@ -15,9 +15,10 @@ export default function AuthGuard({ user, loading, onLogin, children }: Props) {
   return <>{children}</>;
 }
 
-interface MenuItem {
+export interface MenuItem {
   label: string;
   key: string;
+  icon?: string;
 }
 
 const MENU_BY_ROLE: Record<string, MenuItem[]> = {

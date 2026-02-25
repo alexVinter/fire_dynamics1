@@ -41,7 +41,7 @@ def test_other_manager_cannot_edit_quote(
     token = _token(client, "manager2", "mgr123")
     resp = client.put(
         f"/quotes/{q.id}",
-        json={"items": [{"technique_id": 1, "qty": 1}]},
+        json={"customer_name": None, "comment": None, "items": [{"technique_id": 1, "qty": 1}]},
         headers={"Authorization": f"Bearer {token}"},
     )
     assert resp.status_code == 403
@@ -55,7 +55,7 @@ def test_admin_can_edit_any_quote(
     token = _token(client, "admin", "admin123")
     resp = client.put(
         f"/quotes/{q.id}",
-        json={"items": [{"technique_id": 1, "qty": 2}]},
+        json={"customer_name": None, "comment": None, "items": [{"technique_id": 1, "qty": 2}]},
         headers={"Authorization": f"Bearer {token}"},
     )
     assert resp.status_code == 200
@@ -82,7 +82,7 @@ def test_result_line_qty_zero_rejected(
     token = _token(client, "admin", "admin123")
     resp = client.patch(
         f"/quotes/{q.id}/result/{rl.id}",
-        json={"qty": 0},
+        json={"note": None, "qty": 0},
         headers={"Authorization": f"Bearer {token}"},
     )
     assert resp.status_code == 422
@@ -109,7 +109,7 @@ def test_patch_result_line_blocked_on_confirmed(
     token = _token(client, "admin", "admin123")
     resp = client.patch(
         f"/quotes/{q.id}/result/{rl.id}",
-        json={"qty": 10},
+        json={"note": None, "qty": 10},
         headers={"Authorization": f"Bearer {token}"},
     )
     assert resp.status_code == 409

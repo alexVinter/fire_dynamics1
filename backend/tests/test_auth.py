@@ -23,7 +23,7 @@ def test_login_unknown_user(client: TestClient):
 
 def test_me_without_token(client: TestClient):
     resp = client.get("/auth/me")
-    assert resp.status_code == 403  # HTTPBearer returns 403 when header missing
+    assert resp.status_code == 401
 
 
 def test_me_with_valid_token(client: TestClient, admin_user: User):
