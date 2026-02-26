@@ -42,7 +42,7 @@ export default function AppShell({
           onMobileClose={() => setMobileMenu(false)}
         />
 
-        <main className="mx-auto w-full max-w-[1200px] flex-1 p-4 pb-20 md:p-6 md:pb-6">
+        <main className="mx-auto w-full max-w-[1200px] flex-1 p-4 pb-16 md:p-6">
           {(breadcrumbs || title) && (
             <div className="mb-5">
               {breadcrumbs && <Breadcrumbs items={breadcrumbs} />}
@@ -60,7 +60,9 @@ export default function AppShell({
         </main>
       </div>
 
-      <BottomNav items={items} current={currentPage} onNav={onNav} />
+      <div className="md:hidden">
+        <BottomNav items={items} current={currentPage} onNav={onNav} />
+      </div>
     </div>
   );
 }

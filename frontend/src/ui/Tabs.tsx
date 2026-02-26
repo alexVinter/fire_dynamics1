@@ -11,7 +11,7 @@ interface Props {
 
 export default function Tabs({ tabs, active, onChange }: Props) {
   return (
-    <div className="mb-4 overflow-x-auto border-b border-[var(--color-border)]">
+    <div className="mb-4 overflow-x-auto overflow-y-hidden no-scrollbar border-b border-[var(--color-border)]">
       <div className="flex gap-0 -mb-px">
         {tabs.map((tab) => {
           const isActive = tab.key === active;
