@@ -36,7 +36,7 @@ export default function AdminRules() {
     try {
       const c = JSON.parse(conditions);
       const a = JSON.parse(actions);
-      if (!Array.isArray(a) || a.length === 0) { setMsg("actions должен быть непустым массивом"); return; }
+      if (!Array.isArray(a) || a.length === 0) { setMsg("Действия должны быть непустым массивом"); return; }
       await apiPost("/rules", { technique_id: Number(newTechId), conditions: c, actions: a });
       setMsg("Правило создано");
     } catch (err: unknown) {
@@ -49,13 +49,13 @@ export default function AdminRules() {
       <h3>Правила расчёта</h3>
 
       <form onSubmit={handleLoad} style={{ display: "flex", gap: 6, marginBottom: 16 }}>
-        <input placeholder="Technique ID" type="number" value={techId} onChange={e => setTechId(e.target.value)} required />
+        <input placeholder="ID техники" type="number" value={techId} onChange={e => setTechId(e.target.value)} required />
         <button type="submit">Загрузить</button>
       </form>
 
       {rules.length > 0 && (
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, marginBottom: 16 }}>
-          <thead><tr>{["ID","Tech","Ver","Conditions","Actions","Active"].map(h => <th key={h} style={{ textAlign: "left", borderBottom: "1px solid #ccc", padding: 4 }}>{h}</th>)}</tr></thead>
+          <thead><tr>{["ID","Техника","Версия","Условия","Действия","Активен"].map(h => <th key={h} style={{ textAlign: "left", borderBottom: "1px solid #ccc", padding: 4 }}>{h}</th>)}</tr></thead>
           <tbody>
             {rules.map(r => (
               <tr key={r.id}>
@@ -73,9 +73,9 @@ export default function AdminRules() {
 
       <h4>Добавить правило</h4>
       <form onSubmit={handleAdd} style={{ display: "flex", flexDirection: "column", gap: 6, maxWidth: 500 }}>
-        <input placeholder="Technique ID" type="number" value={newTechId} onChange={e => setNewTechId(e.target.value)} required />
-        <textarea placeholder='Conditions JSON: {"zones_included":["engine"]}' rows={3} value={conditions} onChange={e => setConditions(e.target.value)} />
-        <textarea placeholder='Actions JSON: [{"sku_code":"MOD_A","qty_expr":"1 * qty"}]' rows={3} value={actions} onChange={e => setActions(e.target.value)} />
+        <input placeholder="ID техники" type="number" value={newTechId} onChange={e => setNewTechId(e.target.value)} required />
+        <textarea placeholder='Условия JSON: {"zones_included":["engine"]}' rows={3} value={conditions} onChange={e => setConditions(e.target.value)} />
+        <textarea placeholder='Действия JSON: [{"sku_code":"MOD_A","qty_expr":"1 * qty"}]' rows={3} value={actions} onChange={e => setActions(e.target.value)} />
         <button type="submit">Создать</button>
       </form>
       {msg && <p style={{ fontSize: 13 }}>{msg}</p>}

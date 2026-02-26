@@ -9,9 +9,9 @@ import AdminZones from "./AdminZones";
 
 const TABS = [
   { key: "techniques", label: "Техника",  hint: "Каталог техники и производителей" },
-  { key: "aliases",    label: "Aliases",   hint: "Альтернативные названия для поиска" },
+  { key: "aliases",    label: "Псевдонимы", hint: "Альтернативные названия для поиска" },
   { key: "zones",      label: "Зоны",     hint: "Зоны защиты (двигатель, бак и т.д.)" },
-  { key: "skus",       label: "SKU",      hint: "Номенклатура оборудования" },
+  { key: "skus",       label: "Номенклатура", hint: "Номенклатура оборудования" },
   { key: "rules",      label: "Правила",  hint: "Правила расчёта комплектации" },
 ] as const;
 

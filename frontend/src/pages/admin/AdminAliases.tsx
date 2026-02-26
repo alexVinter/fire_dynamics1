@@ -16,7 +16,7 @@ export default function AdminAliases() {
         technique_id: Number(techId),
         note: note || null,
       });
-      setMsg(`Alias "${aliasText}" создан`);
+      setMsg(`Псевдоним «${aliasText}» создан`);
       setAliasText(""); setTechId(""); setNote("");
     } catch (err: unknown) {
       setMsg(String(err));
@@ -25,12 +25,12 @@ export default function AdminAliases() {
 
   return (
     <div>
-      <h3>Aliases техники</h3>
+      <h3>Псевдонимы техники</h3>
       <form onSubmit={handleAdd} style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
-        <input placeholder="Alias текст" value={aliasText} onChange={e => setAliasText(e.target.value)} required />
-        <input placeholder="Technique ID" type="number" value={techId} onChange={e => setTechId(e.target.value)} required />
+        <input placeholder="Текст псевдонима" value={aliasText} onChange={e => setAliasText(e.target.value)} required />
+        <input placeholder="ID техники" type="number" value={techId} onChange={e => setTechId(e.target.value)} required />
         <input placeholder="Заметка" value={note} onChange={e => setNote(e.target.value)} />
-        <button type="submit">Создать alias</button>
+        <button type="submit">Создать псевдоним</button>
       </form>
       {msg && <p style={{ fontSize: 13 }}>{msg}</p>}
     </div>

@@ -34,7 +34,7 @@ export default function AdminSKUs() {
         <button type="submit">Добавить</button>
       </form>
       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
-        <thead><tr>{["ID","Код","Название","Ед.","Active",""].map(h => <th key={h} style={{ textAlign: "left", borderBottom: "1px solid #ccc", padding: 4 }}>{h}</th>)}</tr></thead>
+        <thead><tr>{["ID","Код","Название","Ед.","Активен",""].map(h => <th key={h} style={{ textAlign: "left", borderBottom: "1px solid #ccc", padding: 4 }}>{h}</th>)}</tr></thead>
         <tbody>
           {items.map(s => (
             <tr key={s.id} style={{ opacity: s.active ? 1 : 0.5 }}>
