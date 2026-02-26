@@ -17,8 +17,8 @@ export default function App() {
   const [openQuoteId, setOpenQuoteId] = useState<number | null>(null);
   const [editingQuoteId, setEditingQuoteId] = useState<number | null>(null);
 
-  function handleNav(p: Page) {
-    setPage(p);
+  function handleNav(p: string) {
+    setPage(p as Page);
     setOpenQuoteId(null);
     setEditingQuoteId(null);
   }
@@ -33,7 +33,7 @@ export default function App() {
     <AppShell
       user={user}
       currentPage={page}
-      onNav={(p) => handleNav(p as Page)}
+      onNav={handleNav}
       onLogout={logout}
       breadcrumbs={breadcrumbs}
       title={title}
@@ -110,7 +110,7 @@ function PageContent({
   page: Page; role: string;
   openQuoteId: number | null; onOpenQuote: (id: number | null) => void;
   editingQuoteId: number | null; onEditQuote: (id: number | null) => void;
-  onNav: (p: Page) => void;
+  onNav: (p: string) => void;
 }) {
   if (page === "admin" && role === "admin") return <AdminPanel />;
   if (page === "dashboard") {
