@@ -2,9 +2,10 @@ import { type FormEvent, useState } from "react";
 
 interface Props {
   onLogin: (login: string, password: string) => Promise<void>;
+  onGoRegister?: () => void;
 }
 
-export default function Login({ onLogin }: Props) {
+export default function Login({ onLogin, onGoRegister }: Props) {
   const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -56,6 +57,17 @@ export default function Login({ onLogin }: Props) {
             {submitting ? "Вход…" : "Войти"}
           </button>
         </form>
+        {onGoRegister && (
+          <p style={{ textAlign: "center", marginTop: 16, fontSize: 14 }}>
+            Нет аккаунта?{" "}
+            <button
+              onClick={onGoRegister}
+              style={{ color: "var(--color-accent)", background: "none", border: "none", cursor: "pointer", textDecoration: "underline", fontSize: "inherit" }}
+            >
+              Зарегистрироваться
+            </button>
+          </p>
+        )}
       </div>
     </div>
   );
