@@ -19,6 +19,8 @@ cp .env.example .env
 
 Заполнить `JWT_SECRET` случайным значением. `DATABASE_URL` по умолчанию подходит для локального docker-compose.
 
+На сервере задать `APP_BASE_URL` реальным доменом/IP (например `https://fire.example.com`) — используется для ссылки подтверждения email. Если заданы `SMTP_HOST` и `SMTP_USER` — письмо отправляется через SMTP, иначе ссылка выводится в лог сервера.
+
 ### 2. База данных (PostgreSQL)
 
 ```bash
