@@ -5,9 +5,11 @@ import AdminAliases from "./AdminAliases";
 import AdminRules from "./AdminRules";
 import AdminSKUs from "./AdminSKUs";
 import AdminTechniques from "./AdminTechniques";
+import AdminUsers from "./AdminUsers";
 import AdminZones from "./AdminZones";
 
 const TABS = [
+  { key: "users",      label: "Пользователи", hint: "Управление учётными записями и ролями" },
   { key: "techniques", label: "Техника",  hint: "Каталог техники и производителей" },
   { key: "aliases",    label: "Псевдонимы", hint: "Альтернативные названия для поиска" },
   { key: "zones",      label: "Зоны",     hint: "Зоны защиты (двигатель, бак и т.д.)" },
@@ -18,6 +20,7 @@ const TABS = [
 type TabKey = (typeof TABS)[number]["key"];
 
 const TAB_CONTENT: Record<TabKey, () => React.ReactNode> = {
+  users: AdminUsers,
   techniques: AdminTechniques,
   aliases: AdminAliases,
   zones: AdminZones,
@@ -26,7 +29,7 @@ const TAB_CONTENT: Record<TabKey, () => React.ReactNode> = {
 };
 
 export default function AdminPanel() {
-  const [tab, setTab] = useState<TabKey>("techniques");
+  const [tab, setTab] = useState<TabKey>("users");
   const Content = TAB_CONTENT[tab];
   const current = TABS.find((t) => t.key === tab)!;
 
