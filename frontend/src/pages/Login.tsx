@@ -17,8 +17,15 @@ export default function Login({ onLogin, onGoRegister }: Props) {
     setSubmitting(true);
     try {
       await onLogin(login, password);
-    } catch {
-      setError("Неверный логин или пароль");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "";
+      if (msg.includes("Роль не назначена")) {
+        setError("Роль ещё не назначена администратором. Доступ появится после назначения роли.");
+      } else if (msg.includes("Email not verified")) {
+        setError("Email не подтверждён. Проверьте почту.");
+      } else {
+        setError("Неверный логин или пароль");
+      }
     } finally {
       setSubmitting(false);
     }
