@@ -1,5 +1,6 @@
 import { useState } from "react";
 import AuthGuard from "./auth/AuthGuard";
+import type { UserMe } from "./auth/types";
 import { useAuth } from "./auth/useAuth";
 import AppShell from "./layout/AppShell";
 import AdminPanel from "./pages/admin/AdminPanel";
@@ -7,9 +8,10 @@ import CreateQuote from "./pages/CreateQuote";
 import Dashboard from "./pages/Dashboard";
 import EditQuote from "./pages/EditQuote";
 import QuoteDetail from "./pages/QuoteDetail";
+import Profile from "./pages/Profile";
 import Warehouse from "./pages/Warehouse";
 
-type Page = "dashboard" | "calc" | "admin" | "warehouse";
+type Page = "dashboard" | "calc" | "admin" | "warehouse" | "profile";
 
 export default function App() {
   const { user, loading, login, logout } = useAuth();
@@ -40,6 +42,7 @@ export default function App() {
       subtitle={subtitle}
     >
       <PageContent
+        user={user}
         page={page}
         role={user.role}
         openQuoteId={openQuoteId}
@@ -101,13 +104,21 @@ function pageHeader(page: Page, openId: number | null, editId: number | null) {
     };
   }
 
+  if (page === "profile") {
+    return {
+      breadcrumbs: [root],
+      title: "Профиль",
+      subtitle: "Настройки учётной записи",
+    };
+  }
+
   return { breadcrumbs: [root], title: "", subtitle: undefined };
 }
 
 function PageContent({
-  page, role, openQuoteId, onOpenQuote, editingQuoteId, onEditQuote, onNav,
+  user, page, role, openQuoteId, onOpenQuote, editingQuoteId, onEditQuote, onNav,
 }: {
-  page: Page; role: string | null;
+  user: UserMe; page: Page; role: string | null;
   openQuoteId: number | null; onOpenQuote: (id: number | null) => void;
   editingQuoteId: number | null; onEditQuote: (id: number | null) => void;
   onNav: (p: string) => void;
@@ -139,5 +150,6 @@ function PageContent({
     return <CreateQuote onSaved={(id) => { onOpenQuote(id); onNav("dashboard"); }} />;
   }
   if (page === "warehouse") return <Warehouse />;
+  if (page === "profile") return <Profile user={user} />;
   return <div className="alert alert--error">Нет доступа.</div>;
 }

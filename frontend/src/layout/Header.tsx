@@ -5,9 +5,10 @@ interface Props {
   user: UserMe;
   onLogout: () => void;
   onMobileMenu: () => void;
+  onProfile?: () => void;
 }
 
-export default function Header({ user, onLogout, onMobileMenu }: Props) {
+export default function Header({ user, onLogout, onMobileMenu, onProfile }: Props) {
   return (
     <header className="sticky top-0 z-40 flex h-14 items-center gap-3 border-b border-[var(--color-border)] bg-[var(--color-bg-card)] px-4 shadow-sm lg:px-6">
       <button
@@ -37,7 +38,11 @@ export default function Header({ user, onLogout, onMobileMenu }: Props) {
       <div className="flex-1 md:hidden" />
 
       <div className="flex items-center gap-2">
-        <div className="hidden items-center gap-2 text-sm md:flex">
+        <button
+          onClick={onProfile}
+          className="hidden items-center gap-2 text-sm md:flex rounded-lg px-2 py-1 transition-colors hover:bg-gray-100"
+          title="Профиль"
+        >
           <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[var(--color-accent)] text-xs font-semibold uppercase text-white">
             {user.login[0]}
           </span>
@@ -45,7 +50,7 @@ export default function Header({ user, onLogout, onMobileMenu }: Props) {
             {user.login}
             <span className="ml-1 text-xs opacity-60">({roleLabel(user.role)})</span>
           </span>
-        </div>
+        </button>
         <button
           onClick={onLogout}
           className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"

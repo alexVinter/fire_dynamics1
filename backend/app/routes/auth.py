@@ -103,6 +103,24 @@ def me(current_user: User = Depends(get_current_user)) -> UserMeResponse:
     )
 
 
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str = Field(min_length=6, max_length=255)
+
+
+@router.patch("/me")
+def change_password(
+    body: ChangePasswordRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    if not verify_password(body.current_password, current_user.password_hash):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Неверный текущий пароль")
+    current_user.password_hash = hash_password(body.new_password)
+    db.commit()
+    return {"detail": "ok"}
+
+
 @router.post("/logout", status_code=status.HTTP_200_OK)
 def logout() -> dict:
     return {"detail": "ok"}

@@ -31,6 +31,7 @@ export default function AppShell({
         user={user}
         onLogout={onLogout}
         onMobileMenu={() => setMobileMenu(true)}
+        onProfile={() => onNav("profile")}
       />
 
       <div className="flex flex-1">
