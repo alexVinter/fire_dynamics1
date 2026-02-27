@@ -72,6 +72,7 @@ const MENU_BY_ROLE: Record<string, MenuItem[]> = {
   ],
 };
 
-export function useMenuItems(role: string): MenuItem[] {
+export function useMenuItems(role: string | null): MenuItem[] {
+  if (!role) return [];
   return MENU_BY_ROLE[role] ?? [];
 }

@@ -1,4 +1,4 @@
-import type { UserMe } from "../auth/types";
+import { type UserMe, roleLabel } from "../auth/types";
 import { IconMenu, IconSearch, IconLogout } from "./icons";
 
 interface Props {
@@ -43,7 +43,7 @@ export default function Header({ user, onLogout, onMobileMenu }: Props) {
           </span>
           <span className="text-[var(--color-text-secondary)]">
             {user.login}
-            <span className="ml-1 text-xs opacity-60">({user.role})</span>
+            <span className="ml-1 text-xs opacity-60">({roleLabel(user.role)})</span>
           </span>
         </div>
         <button

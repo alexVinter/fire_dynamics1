@@ -54,6 +54,15 @@ export async function apiPatch<T>(path: string, body: unknown): Promise<T> {
   return handleResponse<T>(res);
 }
 
+export async function apiDelete<T = void>(path: string): Promise<T> {
+  const res = await fetch(`${BASE}${path}`, {
+    method: "DELETE",
+    headers: authHeaders(),
+  });
+  if (res.status === 204) return undefined as T;
+  return handleResponse<T>(res);
+}
+
 export async function apiPut<T>(path: string, body: unknown): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
     method: "PUT",

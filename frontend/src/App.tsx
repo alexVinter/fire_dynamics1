@@ -107,7 +107,7 @@ function pageHeader(page: Page, openId: number | null, editId: number | null) {
 function PageContent({
   page, role, openQuoteId, onOpenQuote, editingQuoteId, onEditQuote, onNav,
 }: {
-  page: Page; role: string;
+  page: Page; role: string | null;
   openQuoteId: number | null; onOpenQuote: (id: number | null) => void;
   editingQuoteId: number | null; onEditQuote: (id: number | null) => void;
   onNav: (p: string) => void;

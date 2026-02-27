@@ -1,10 +1,10 @@
 import { type FormEvent, useEffect, useState } from "react";
-import { apiGet, apiPatch, apiPost } from "../../api/client";
+import { apiGet, apiPatch, apiPost, apiDelete } from "../../api/client";
 
 interface UserItem {
   id: number;
   login: string;
-  role: string;
+  role: string | null;
   is_active: boolean;
 }
 
@@ -55,6 +55,12 @@ export default function AdminUsers() {
     catch { /* toast shown by client */ }
   }
 
+  async function handleDelete(u: UserItem) {
+    if (!confirm(`Удалить пользователя «${u.login}»?`)) return;
+    try { await apiDelete(`/admin/users/${u.id}`); load(); }
+    catch { /* toast shown by client */ }
+  }
+
   return (
     <div>
       <h3>Пользователи</h3>
@@ -82,19 +88,23 @@ export default function AdminUsers() {
 
       {!loading && !error && items.length > 0 && (
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
-          <thead><tr>{["ID","Логин","Роль","Активен",""].map(h => <th key={h} style={{ textAlign: "left", borderBottom: "1px solid #ccc", padding: 4 }}>{h}</th>)}</tr></thead>
+          <thead><tr>{["ID","Логин","Роль","Активен","Действия"].map(h => <th key={h} style={{ textAlign: "left", borderBottom: "1px solid #ccc", padding: 4 }}>{h}</th>)}</tr></thead>
           <tbody>
             {items.map(u => (
               <tr key={u.id} style={{ opacity: u.is_active ? 1 : 0.5 }}>
                 <td style={{ padding: 4 }}>{u.id}</td>
                 <td style={{ padding: 4 }}>{u.login}</td>
                 <td style={{ padding: 4 }}>
-                  <select value={u.role} onChange={e => changeRole(u, e.target.value)}>
+                  <select value={u.role ?? ""} onChange={e => changeRole(u, e.target.value)}>
+                    {u.role === null && <option value="" disabled>Без роли</option>}
                     {ROLES.map(r => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}
                   </select>
                 </td>
                 <td style={{ padding: 4 }}>{u.is_active ? "Да" : "Нет"}</td>
-                <td style={{ padding: 4 }}><button onClick={() => toggleActive(u)}>{u.is_active ? "Откл" : "Вкл"}</button></td>
+                <td style={{ padding: 4, display: "flex", gap: 4 }}>
+                  <button onClick={() => toggleActive(u)}>{u.is_active ? "Откл" : "Вкл"}</button>
+                  <button onClick={() => handleDelete(u)} style={{ color: "#dc2626" }}>Удалить</button>
+                </td>
               </tr>
             ))}
           </tbody>
