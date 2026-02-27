@@ -49,7 +49,7 @@ def register(body: RegisterRequest, db: Session = Depends(get_db)) -> RegisterRe
         login=body.login,
         email=body.email,
         password_hash=hash_password(body.password),
-        role="client",
+        role=None,
         is_active=True,
         email_verified=False,
     )
@@ -86,6 +86,9 @@ def login(body: LoginRequest, db: Session = Depends(get_db)) -> TokenResponse:
 
     if user.email is not None and not user.email_verified:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Email not verified")
+
+    if user.role is None:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Роль не назначена. Обратитесь к администратору.")
 
     token = create_access_token({"sub": str(user.id), "role": user.role})
     return TokenResponse(access_token=token)

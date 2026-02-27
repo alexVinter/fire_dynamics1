@@ -1,14 +1,18 @@
+from typing import Literal
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
+from app.deps.auth import get_current_user
 from app.deps.rbac import require_role
+from app.models.quote import Quote
 from app.models.user import User
 from app.services.auth import hash_password
 
-VALID_ROLES = ("admin", "manager", "warehouse")
+RoleType = Literal["admin", "manager", "warehouse"]
 
 router = APIRouter(
     prefix="/admin/users",
@@ -20,18 +24,18 @@ router = APIRouter(
 class UserOut(BaseModel):
     id: int
     login: str
-    role: str
+    role: str | None
     is_active: bool
 
 
 class UserCreate(BaseModel):
     login: str = Field(min_length=1, max_length=255)
     password: str = Field(min_length=6, max_length=255)
-    role: str = Field(default="manager")
+    role: RoleType = "manager"
 
 
 class UserPatch(BaseModel):
-    role: str | None = None
+    role: RoleType | None = None
     is_active: bool | None = None
 
 
@@ -43,12 +47,6 @@ def list_users(db: Session = Depends(get_db)) -> list[UserOut]:
 
 @router.post("", response_model=UserOut, status_code=status.HTTP_201_CREATED)
 def create_user(body: UserCreate, db: Session = Depends(get_db)) -> UserOut:
-    if body.role not in VALID_ROLES:
-        raise HTTPException(
-            status.HTTP_422_UNPROCESSABLE_ENTITY,
-            f"Invalid role. Allowed: {', '.join(VALID_ROLES)}",
-        )
-
     exists = db.execute(select(User).where(User.login == body.login)).scalar_one_or_none()
     if exists is not None:
         raise HTTPException(status.HTTP_409_CONFLICT, "Login already taken")
@@ -71,11 +69,6 @@ def patch_user(user_id: int, body: UserPatch, db: Session = Depends(get_db)) -> 
         raise HTTPException(status.HTTP_404_NOT_FOUND, "User not found")
 
     if body.role is not None:
-        if body.role not in VALID_ROLES:
-            raise HTTPException(
-                status.HTTP_422_UNPROCESSABLE_ENTITY,
-                f"Invalid role. Allowed: {', '.join(VALID_ROLES)}",
-            )
         user.role = body.role
 
     if body.is_active is not None:
@@ -84,3 +77,26 @@ def patch_user(user_id: int, body: UserPatch, db: Session = Depends(get_db)) -> 
     db.commit()
     db.refresh(user)
     return UserOut(id=user.id, login=user.login, role=user.role, is_active=user.is_active)
+
+
+@router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_user(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> None:
+    if user_id == current_user.id:
+        raise HTTPException(status.HTTP_409_CONFLICT, "Нельзя удалить самого себя")
+
+    user = db.get(User, user_id)
+    if user is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "User not found")
+
+    has_quotes = db.execute(
+        select(Quote.id).where(Quote.created_by == user_id).limit(1)
+    ).first()
+    if has_quotes:
+        raise HTTPException(status.HTTP_409_CONFLICT, "У пользователя есть КП — деактивируйте вместо удаления")
+
+    db.delete(user)
+    db.commit()
