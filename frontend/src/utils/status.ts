@@ -45,3 +45,37 @@ export function availLabel(status: string): string {
 export function availBadgeColor(status: string): BadgeColor {
   return AVAIL_COLORS[status] ?? "yellow";
 }
+
+/* ── Status transitions (mirrors backend quote_status.TRANSITIONS) ── */
+
+interface Transition {
+  to: string;
+  roles: string[];
+  label: string;
+  danger?: boolean;
+}
+
+const TRANSITIONS: Record<string, Transition[]> = {
+  calculated: [
+    { to: "approved", roles: ["manager", "admin"], label: "Согласовать" },
+  ],
+  approved: [
+    { to: "warehouse_check", roles: ["manager", "admin"], label: "Отправить на склад" },
+  ],
+  warehouse_check: [
+    { to: "confirmed", roles: ["warehouse", "admin"], label: "Подтвердить" },
+    { to: "rework", roles: ["warehouse", "admin"], label: "На доработку", danger: true },
+  ],
+};
+
+export function getAvailableTransitions(
+  currentStatus: string,
+  role: string | null,
+): { to: string; label: string; danger?: boolean }[] {
+  if (!role) return [];
+  const list = TRANSITIONS[currentStatus];
+  if (!list) return [];
+  return list
+    .filter((t) => t.roles.includes(role))
+    .map(({ to, label, danger }) => ({ to, label, danger }));
+}

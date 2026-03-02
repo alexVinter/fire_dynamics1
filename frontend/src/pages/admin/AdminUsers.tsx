@@ -1,5 +1,6 @@
 import { type FormEvent, useEffect, useState } from "react";
 import { apiGet, apiPatch, apiPost, apiDelete } from "../../api/client";
+import { Table, Th, Td, Tr } from "../../ui/Table";
 
 interface UserItem {
   id: number;
@@ -62,53 +63,105 @@ export default function AdminUsers() {
   }
 
   return (
-    <div>
-      <h3>Пользователи</h3>
-      <form onSubmit={handleAdd} style={{ display: "flex", gap: 6, marginBottom: 12 }}>
-        <input placeholder="Логин" value={login} onChange={e => setLogin(e.target.value)} required />
-        <input placeholder="Пароль" type="password" value={password} onChange={e => setPassword(e.target.value)} required minLength={6} />
-        <select value={role} onChange={e => setRole(e.target.value)}>
+    <div className="flex flex-col gap-4">
+      <form
+        onSubmit={handleAdd}
+        className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2"
+      >
+        <input
+          className="w-full min-w-0 rounded-md border border-[var(--color-border)] bg-white px-3 py-2 text-sm focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/20 sm:w-auto sm:flex-1 sm:min-w-[100px]"
+          placeholder="Логин"
+          value={login}
+          onChange={e => setLogin(e.target.value)}
+          required
+        />
+        <input
+          className="w-full min-w-0 rounded-md border border-[var(--color-border)] bg-white px-3 py-2 text-sm focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/20 sm:w-auto sm:flex-1 sm:min-w-[100px]"
+          placeholder="Пароль"
+          type="password"
+          value={password}
+          onChange={e => setPassword(e.target.value)}
+          required
+          minLength={6}
+        />
+        <select
+          className="w-full min-w-0 rounded-md border border-[var(--color-border)] bg-white px-3 py-2 text-sm focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/20 sm:w-auto sm:min-w-[120px]"
+          value={role}
+          onChange={e => setRole(e.target.value)}
+        >
           {ROLES.map(r => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}
         </select>
-        <button type="submit" disabled={saving}>{saving ? "Сохранение…" : "Добавить"}</button>
+        <button
+          type="submit"
+          disabled={saving}
+          className="w-full rounded-md bg-[var(--color-accent)] px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50 sm:w-auto"
+        >
+          {saving ? "Сохранение…" : "Добавить"}
+        </button>
       </form>
 
-      {loading && <p style={{ fontSize: 14, color: "#888" }}>Загрузка…</p>}
+      {loading && <p className="text-sm text-[var(--color-text-secondary)]">Загрузка…</p>}
 
       {error && (
-        <p style={{ fontSize: 14, color: "#dc2626" }}>
+        <p className="text-sm text-[var(--color-danger)]">
           Не удалось загрузить список.{" "}
-          <button onClick={load} style={{ textDecoration: "underline", color: "inherit" }}>Повторить</button>
+          <button type="button" onClick={load} className="underline">Повторить</button>
         </p>
       )}
 
       {!loading && !error && items.length === 0 && (
-        <p style={{ fontSize: 14, color: "#888" }}>Нет пользователей</p>
+        <p className="text-sm text-[var(--color-text-secondary)]">Нет пользователей</p>
       )}
 
       {!loading && !error && items.length > 0 && (
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
-          <thead><tr>{["ID","Логин","Роль","Активен","Действия"].map(h => <th key={h} style={{ textAlign: "left", borderBottom: "1px solid #ccc", padding: 4 }}>{h}</th>)}</tr></thead>
+        <Table className="min-w-[520px]">
+          <thead>
+            <tr>
+              <Th>ID</Th>
+              <Th>Логин</Th>
+              <Th>Роль</Th>
+              <Th>Активен</Th>
+              <Th>Действия</Th>
+            </tr>
+          </thead>
           <tbody>
             {items.map(u => (
-              <tr key={u.id} style={{ opacity: u.is_active ? 1 : 0.5 }}>
-                <td style={{ padding: 4 }}>{u.id}</td>
-                <td style={{ padding: 4 }}>{u.login}</td>
-                <td style={{ padding: 4 }}>
-                  <select value={u.role ?? ""} onChange={e => changeRole(u, e.target.value)}>
+              <Tr key={u.id} className={u.is_active ? "" : "opacity-50"}>
+                <Td>{u.id}</Td>
+                <Td>{u.login}</Td>
+                <Td>
+                  <select
+                    className="min-w-0 rounded-md border border-[var(--color-border)] bg-white px-2 py-1 text-sm focus:border-[var(--color-accent)] focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]/20"
+                    value={u.role ?? ""}
+                    onChange={e => changeRole(u, e.target.value)}
+                  >
                     {u.role === null && <option value="" disabled>Без роли</option>}
                     {ROLES.map(r => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}
                   </select>
-                </td>
-                <td style={{ padding: 4 }}>{u.is_active ? "Да" : "Нет"}</td>
-                <td style={{ padding: 4, display: "flex", gap: 4 }}>
-                  <button onClick={() => toggleActive(u)}>{u.is_active ? "Откл" : "Вкл"}</button>
-                  <button onClick={() => handleDelete(u)} style={{ color: "#dc2626" }}>Удалить</button>
-                </td>
-              </tr>
+                </Td>
+                <Td>{u.is_active ? "Да" : "Нет"}</Td>
+                <Td>
+                  <div className="flex flex-wrap gap-1">
+                    <button
+                      type="button"
+                      className="rounded border border-[var(--color-border)] bg-white px-2 py-1 text-xs hover:bg-gray-50"
+                      onClick={() => toggleActive(u)}
+                    >
+                      {u.is_active ? "Откл" : "Вкл"}
+                    </button>
+                    <button
+                      type="button"
+                      className="rounded px-2 py-1 text-xs text-[var(--color-danger)] hover:bg-red-50"
+                      onClick={() => handleDelete(u)}
+                    >
+                      Удалить
+                    </button>
+                  </div>
+                </Td>
+              </Tr>
             ))}
           </tbody>
-        </table>
+        </Table>
       )}
     </div>
   );

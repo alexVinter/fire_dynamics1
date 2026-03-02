@@ -5,7 +5,7 @@ import Button from "../ui/Button";
 import Card from "../ui/Card";
 import { Table, Th, Td, Tr } from "../ui/Table";
 import Tabs from "../ui/Tabs";
-import { statusLabel, statusBadgeColor, availLabel, availBadgeColor } from "../utils/status";
+import { statusLabel, statusBadgeColor, availLabel, availBadgeColor, getAvailableTransitions } from "../utils/status";
 
 interface QuoteItemOut {
   id: number;
@@ -66,6 +66,7 @@ export default function QuoteDetail({ quoteId, role, onBack, onEdit }: Props) {
   const [quote, setQuote] = useState<QuoteOut | null>(null);
   const [resultLines, setResultLines] = useState<ResultLine[]>([]);
   const [calculating, setCalculating] = useState(false);
+  const [changingStatus, setChangingStatus] = useState(false);
   const [error, setError] = useState("");
   const [tab, setTab] = useState("spec");
 
@@ -110,6 +111,20 @@ export default function QuoteDetail({ quoteId, role, onBack, onEdit }: Props) {
       URL.revokeObjectURL(url);
     } catch (err: unknown) {
       setError(String(err));
+    }
+  }
+
+  async function handleStatusChange(newStatus: string) {
+    setError("");
+    setChangingStatus(true);
+    try {
+      await apiPost(`/quotes/${quoteId}/status`, { status: newStatus });
+      loadQuote();
+      loadResult();
+    } catch (err: unknown) {
+      setError(String(err));
+    } finally {
+      setChangingStatus(false);
     }
   }
 
@@ -207,6 +222,24 @@ export default function QuoteDetail({ quoteId, role, onBack, onEdit }: Props) {
             Экспорт в Excel
           </Button>
         )}
+
+        {quote && getAvailableTransitions(quote.status, role).length > 0 && (
+          <>
+            <div className="hidden h-5 w-px bg-[var(--color-border)] sm:block" />
+            {getAvailableTransitions(quote.status, role).map((t) => (
+              <Button
+                key={t.to}
+                variant={t.danger ? "ghost" : "primary"}
+                size="sm"
+                className={t.danger ? "text-[var(--color-danger)] hover:bg-red-50" : ""}
+                disabled={changingStatus}
+                onClick={() => handleStatusChange(t.to)}
+              >
+                {changingStatus ? "Смена…" : t.label}
+              </Button>
+            ))}
+          </>
+        )}
       </div>
 
       {error && (
@@ -230,101 +263,56 @@ export default function QuoteDetail({ quoteId, role, onBack, onEdit }: Props) {
                   )}
                 </Card>
               ) : (
-                <>
-                  {/* Desktop table */}
-                  <div className="hidden sm:block">
-                    <Table>
-                      <thead>
-                        <tr>
-                          <Th>Код</Th>
-                          <Th>Название</Th>
-                          <Th>Ед.</Th>
-                          <Th>Кол-во</Th>
-                          <Th>Заметка</Th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {resultLines.map((ln) => (
-                          <Tr key={ln.id}>
-                            <Td className="whitespace-nowrap font-medium">{ln.sku_code ?? ln.sku_id}</Td>
-                            <Td>{ln.sku_name ?? "—"}</Td>
-                            <Td className="text-[var(--color-text-secondary)]">{ln.sku_unit ?? "—"}</Td>
-                            <Td>
-                              {role === "admin" ? (
-                                <input
-                                  type="number"
-                                  min={0}
-                                  className="w-20 rounded-lg border border-[var(--color-border)] px-2 py-1 text-sm focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/20"
-                                  value={ln.qty}
-                                  onChange={(e) => handleLineQtyChange(ln, Number(e.target.value))}
-                                />
-                              ) : (
-                                <span className="font-medium">{ln.qty}</span>
-                              )}
-                            </Td>
-                            <Td>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <thead>
+                      <tr>
+                        <Th>Код</Th>
+                        <Th>Название</Th>
+                        <Th>Ед.</Th>
+                        <Th>Кол-во</Th>
+                        <Th>Заметка</Th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {resultLines.map((ln) => (
+                        <Tr key={ln.id}>
+                          <Td className="whitespace-nowrap font-medium">{ln.sku_code ?? ln.sku_id}</Td>
+                          <Td>{ln.sku_name ?? "—"}</Td>
+                          <Td className="text-[var(--color-text-secondary)]">{ln.sku_unit ?? "—"}</Td>
+                          <Td>
+                            {role === "admin" ? (
                               <input
-                                className="w-full rounded-lg border border-[var(--color-border)] px-2 py-1 text-sm focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/20"
-                                value={ln.note ?? ""}
-                                placeholder="заметка…"
-                                onBlur={(e) => {
-                                  const val = e.target.value;
-                                  if (val !== (ln.note ?? "")) handleLineNoteChange(ln, val);
-                                }}
-                                onChange={(e) => {
-                                  const val = e.target.value;
-                                  setResultLines((prev) => prev.map((l) => (l.id === ln.id ? { ...l, note: val } : l)));
-                                }}
+                                type="number"
+                                min={0}
+                                className="w-20 rounded-lg border border-[var(--color-border)] px-2 py-1 text-sm focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/20"
+                                value={ln.qty}
+                                onChange={(e) => handleLineQtyChange(ln, Number(e.target.value))}
                               />
-                            </Td>
-                          </Tr>
-                        ))}
-                      </tbody>
-                    </Table>
-                  </div>
-
-                  {/* Mobile cards */}
-                  <div className="flex flex-col gap-3 sm:hidden">
-                    {resultLines.map((ln) => (
-                      <Card key={ln.id} className="flex flex-col gap-2">
-                        <div className="flex items-start justify-between gap-2">
-                          <div>
-                            <p className="text-sm font-semibold">{ln.sku_name ?? "—"}</p>
-                            <p className="text-xs text-[var(--color-text-secondary)]">
-                              {ln.sku_code ?? ln.sku_id} · {ln.sku_unit ?? "—"}
-                            </p>
-                          </div>
-                          {role === "admin" ? (
+                            ) : (
+                              <span className="font-medium">{ln.qty}</span>
+                            )}
+                          </Td>
+                          <Td>
                             <input
-                              type="number"
-                              min={0}
-                              className="w-16 rounded-lg border border-[var(--color-border)] px-2 py-1 text-right text-sm font-medium focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/20"
-                              value={ln.qty}
-                              onChange={(e) => handleLineQtyChange(ln, Number(e.target.value))}
+                              className="w-full rounded-lg border border-[var(--color-border)] px-2 py-1 text-sm focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/20"
+                              value={ln.note ?? ""}
+                              placeholder="заметка…"
+                              onBlur={(e) => {
+                                const val = e.target.value;
+                                if (val !== (ln.note ?? "")) handleLineNoteChange(ln, val);
+                              }}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setResultLines((prev) => prev.map((l) => (l.id === ln.id ? { ...l, note: val } : l)));
+                              }}
                             />
-                          ) : (
-                            <span className="rounded-lg bg-gray-100 px-2.5 py-1 text-sm font-semibold">
-                              {ln.qty}
-                            </span>
-                          )}
-                        </div>
-                        <input
-                          className="w-full rounded-lg border border-[var(--color-border)] px-2 py-1.5 text-sm focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/20"
-                          value={ln.note ?? ""}
-                          placeholder="заметка…"
-                          onBlur={(e) => {
-                            const val = e.target.value;
-                            if (val !== (ln.note ?? "")) handleLineNoteChange(ln, val);
-                          }}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setResultLines((prev) => prev.map((l) => (l.id === ln.id ? { ...l, note: val } : l)));
-                          }}
-                        />
-                      </Card>
-                    ))}
-                  </div>
-                </>
+                          </Td>
+                        </Tr>
+                      ))}
+                    </tbody>
+                  </Table>
+                </div>
               )}
             </>
           )}
@@ -339,55 +327,34 @@ export default function QuoteDetail({ quoteId, role, onBack, onEdit }: Props) {
                   </p>
                 </Card>
               ) : (
-                <>
-                  {/* Desktop */}
-                  <div className="hidden sm:block">
-                    <Table>
-                      <thead>
-                        <tr>
-                          <Th>Код</Th>
-                          <Th>Название</Th>
-                          <Th>Кол-во</Th>
-                          <Th>Наличие</Th>
-                          <Th>Комментарий склада</Th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {warehouseLines.map((ln) => (
-                          <Tr key={ln.id}>
-                            <Td className="font-medium">{ln.sku_code ?? ln.sku_id}</Td>
-                            <Td>{ln.sku_name ?? "—"}</Td>
-                            <Td>{ln.qty}</Td>
-                            <Td>
-                              <Badge color={availBadgeColor(ln.availability_status ?? "")}>
-                                {availLabel(ln.availability_status ?? "—")}
-                              </Badge>
-                            </Td>
-                            <Td className="text-sm">{ln.availability_comment || "—"}</Td>
-                          </Tr>
-                        ))}
-                      </tbody>
-                    </Table>
-                  </div>
-
-                  {/* Mobile */}
-                  <div className="flex flex-col gap-3 sm:hidden">
-                    {warehouseLines.map((ln) => (
-                      <Card key={ln.id} className="flex flex-col gap-1.5">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-semibold">{ln.sku_name ?? "—"}</span>
-                          <Badge color={availBadgeColor(ln.availability_status ?? "")}>
-                            {availLabel(ln.availability_status ?? "—")}
-                          </Badge>
-                        </div>
-                        <p className="text-xs text-[var(--color-text-secondary)]">{ln.sku_code} · {ln.qty} {ln.sku_unit}</p>
-                        {ln.availability_comment && (
-                          <p className="text-sm text-[var(--color-text-secondary)]">{ln.availability_comment}</p>
-                        )}
-                      </Card>
-                    ))}
-                  </div>
-                </>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <thead>
+                      <tr>
+                        <Th>Код</Th>
+                        <Th>Название</Th>
+                        <Th>Кол-во</Th>
+                        <Th>Наличие</Th>
+                        <Th>Комментарий склада</Th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {warehouseLines.map((ln) => (
+                        <Tr key={ln.id}>
+                          <Td className="font-medium">{ln.sku_code ?? ln.sku_id}</Td>
+                          <Td>{ln.sku_name ?? "—"}</Td>
+                          <Td>{ln.qty}</Td>
+                          <Td>
+                            <Badge color={availBadgeColor(ln.availability_status ?? "")}>
+                              {availLabel(ln.availability_status ?? "—")}
+                            </Badge>
+                          </Td>
+                          <Td className="text-sm">{ln.availability_comment || "—"}</Td>
+                        </Tr>
+                      ))}
+                    </tbody>
+                  </Table>
+                </div>
               )}
             </>
           )}

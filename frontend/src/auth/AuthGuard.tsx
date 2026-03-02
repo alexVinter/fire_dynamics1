@@ -61,7 +61,7 @@ const MENU_BY_ROLE: Record<string, MenuItem[]> = {
   admin: [
     { key: "dashboard", label: "История КП" },
     { key: "calc", label: "Новый расчёт" },
-    { key: "admin", label: "Админка" },
+    { key: "admin", label: "Админ-панель" },
   ],
   manager: [
     { key: "dashboard", label: "История КП" },
