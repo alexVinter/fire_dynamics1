@@ -1,5 +1,9 @@
 import { type FormEvent, useState } from "react";
 import { apiGet, apiPost } from "../../api/client";
+import type { ColumnDef } from "../../hooks/useTableData";
+import { useTableData } from "../../hooks/useTableData";
+import { Table, Td, Tr } from "../../ui/Table";
+import { SortableTh, FilterRow, PaginationBar } from "../../ui/TableControls";
 
 interface RuleOut {
   id: number;
@@ -12,6 +16,24 @@ interface RuleOut {
   active: boolean;
 }
 
+const COLUMNS: ColumnDef<RuleOut>[] = [
+  { key: "id", sortable: true },
+  { key: "technique_id", sortable: true },
+  { key: "version", sortable: true },
+  { key: "conditions" },
+  { key: "actions" },
+  {
+    key: "active",
+    sortable: true,
+    filterable: true,
+    filterType: "select",
+    filterOptions: [
+      { value: "true", label: "Да" },
+      { value: "false", label: "Нет" },
+    ],
+  },
+];
+
 export default function AdminRules() {
   const [techId, setTechId] = useState("");
   const [rules, setRules] = useState<RuleOut[]>([]);
@@ -20,6 +42,12 @@ export default function AdminRules() {
   const [conditions, setConditions] = useState('{}');
   const [actions, setActions] = useState('[{"sku_code":"","qty_expr":"1 * qty"}]');
   const [msg, setMsg] = useState("");
+
+  const {
+    view, sort, toggleSort, filters, setFilter,
+    page, setPage, pageSize, setPageSize,
+    totalPages, totalFiltered, totalRows,
+  } = useTableData(rules, COLUMNS);
 
   async function handleLoad(e: FormEvent) {
     e.preventDefault();
@@ -46,32 +74,47 @@ export default function AdminRules() {
 
   return (
     <div>
-      <h3>Правила расчёта</h3>
-
       <form onSubmit={handleLoad} style={{ display: "flex", gap: 6, marginBottom: 16 }}>
         <input placeholder="ID техники" type="number" value={techId} onChange={e => setTechId(e.target.value)} required />
         <button type="submit">Загрузить</button>
       </form>
 
       {rules.length > 0 && (
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, marginBottom: 16 }}>
-          <thead><tr>{["ID","Техника","Версия","Условия","Действия","Активен"].map(h => <th key={h} style={{ textAlign: "left", borderBottom: "1px solid #ccc", padding: 4 }}>{h}</th>)}</tr></thead>
-          <tbody>
-            {rules.map(r => (
-              <tr key={r.id}>
-                <td style={{ padding: 4 }}>{r.id}</td>
-                <td style={{ padding: 4 }}>{r.technique_id}</td>
-                <td style={{ padding: 4 }}>{r.version}</td>
-                <td style={{ padding: 4, maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{JSON.stringify(r.conditions)}</td>
-                <td style={{ padding: 4, maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{JSON.stringify(r.actions)}</td>
-                <td style={{ padding: 4 }}>{r.active ? "Да" : "Нет"}</td>
+        <>
+          <Table>
+            <thead>
+              <tr>
+                <SortableTh columnKey="id" sort={sort} onSort={toggleSort}>ID</SortableTh>
+                <SortableTh columnKey="technique_id" sort={sort} onSort={toggleSort}>Техника</SortableTh>
+                <SortableTh columnKey="version" sort={sort} onSort={toggleSort}>Версия</SortableTh>
+                <th className="whitespace-nowrap border-b border-[var(--color-border)] bg-gray-50 px-4 py-3 text-xs font-semibold uppercase tracking-wider text-[var(--color-text-secondary)]">Условия</th>
+                <th className="whitespace-nowrap border-b border-[var(--color-border)] bg-gray-50 px-4 py-3 text-xs font-semibold uppercase tracking-wider text-[var(--color-text-secondary)]">Действия</th>
+                <SortableTh columnKey="active" sort={sort} onSort={toggleSort}>Активен</SortableTh>
               </tr>
-            ))}
-          </tbody>
-        </table>
+              <FilterRow columns={COLUMNS} filters={filters} onFilter={setFilter} />
+            </thead>
+            <tbody>
+              {view.map(r => (
+                <Tr key={r.id}>
+                  <Td>{r.id}</Td>
+                  <Td>{r.technique_id}</Td>
+                  <Td>{r.version}</Td>
+                  <Td className="max-w-[200px] truncate">{JSON.stringify(r.conditions)}</Td>
+                  <Td className="max-w-[200px] truncate">{JSON.stringify(r.actions)}</Td>
+                  <Td>{r.active ? "Да" : "Нет"}</Td>
+                </Tr>
+              ))}
+            </tbody>
+          </Table>
+          <PaginationBar
+            page={page} totalPages={totalPages} pageSize={pageSize}
+            onPageChange={setPage} onPageSizeChange={setPageSize}
+            totalFiltered={totalFiltered} totalRows={totalRows}
+          />
+        </>
       )}
 
-      <h4>Добавить правило</h4>
+      <h4 style={{ marginTop: 16 }}>Добавить правило</h4>
       <form onSubmit={handleAdd} style={{ display: "flex", flexDirection: "column", gap: 6, maxWidth: 500 }}>
         <input placeholder="ID техники" type="number" value={newTechId} onChange={e => setNewTechId(e.target.value)} required />
         <textarea placeholder='Условия JSON: {"zones_included":["engine"]}' rows={3} value={conditions} onChange={e => setConditions(e.target.value)} />

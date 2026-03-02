@@ -1,12 +1,43 @@
 import { type FormEvent, useEffect, useState } from "react";
 import { apiGet, apiPatch, apiPost } from "../../api/client";
+import type { ColumnDef } from "../../hooks/useTableData";
+import { useTableData } from "../../hooks/useTableData";
+import { Table, Td, Tr } from "../../ui/Table";
+import { SortableTh, FilterRow, PaginationBar } from "../../ui/TableControls";
 
-interface Zone { id: number; code: string; title_ru: string; active: boolean; }
+interface Zone {
+  id: number;
+  code: string;
+  title_ru: string;
+  active: boolean;
+}
+
+const COLUMNS: ColumnDef<Zone>[] = [
+  { key: "id", sortable: true },
+  { key: "code", sortable: true, filterable: true },
+  { key: "title_ru", sortable: true, filterable: true },
+  {
+    key: "active",
+    sortable: true,
+    filterable: true,
+    filterType: "select",
+    filterOptions: [
+      { value: "true", label: "Да" },
+      { value: "false", label: "Нет" },
+    ],
+  },
+];
 
 export default function AdminZones() {
   const [items, setItems] = useState<Zone[]>([]);
   const [code, setCode] = useState("");
   const [title, setTitle] = useState("");
+
+  const {
+    view, sort, toggleSort, filters, setFilter,
+    page, setPage, pageSize, setPageSize,
+    totalPages, totalFiltered, totalRows,
+  } = useTableData(items, COLUMNS);
 
   const load = () => apiGet<Zone[]>("/zones").then(setItems).catch(() => {});
   useEffect(() => { load(); }, []);
@@ -25,26 +56,45 @@ export default function AdminZones() {
 
   return (
     <div>
-      <h3>Зоны тушения</h3>
       <form onSubmit={handleAdd} style={{ display: "flex", gap: 6, marginBottom: 12 }}>
         <input placeholder="Код (engine, tank…)" value={code} onChange={e => setCode(e.target.value)} required />
         <input placeholder="Название" value={title} onChange={e => setTitle(e.target.value)} required />
         <button type="submit">Добавить</button>
       </form>
-      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
-        <thead><tr>{["ID","Код","Название","Активен",""].map(h => <th key={h} style={{ textAlign: "left", borderBottom: "1px solid #ccc", padding: 4 }}>{h}</th>)}</tr></thead>
+      <Table>
+        <thead>
+          <tr>
+            <SortableTh columnKey="id" sort={sort} onSort={toggleSort}>ID</SortableTh>
+            <SortableTh columnKey="code" sort={sort} onSort={toggleSort}>Код</SortableTh>
+            <SortableTh columnKey="title_ru" sort={sort} onSort={toggleSort}>Название</SortableTh>
+            <SortableTh columnKey="active" sort={sort} onSort={toggleSort}>Активен</SortableTh>
+            <th className="border-b border-[var(--color-border)] bg-gray-50 px-4 py-3" />
+          </tr>
+          <FilterRow columns={COLUMNS} filters={filters} onFilter={setFilter}>
+            <th className="border-b border-[var(--color-border)] bg-gray-50/60 px-4 py-1.5" />
+          </FilterRow>
+        </thead>
         <tbody>
-          {items.map(z => (
-            <tr key={z.id} style={{ opacity: z.active ? 1 : 0.5 }}>
-              <td style={{ padding: 4 }}>{z.id}</td>
-              <td style={{ padding: 4 }}>{z.code}</td>
-              <td style={{ padding: 4 }}>{z.title_ru}</td>
-              <td style={{ padding: 4 }}>{z.active ? "Да" : "Нет"}</td>
-              <td style={{ padding: 4 }}><button onClick={() => toggleActive(z)}>{z.active ? "Откл" : "Вкл"}</button></td>
-            </tr>
+          {view.map(z => (
+            <Tr key={z.id} className={z.active ? "" : "opacity-50"}>
+              <Td>{z.id}</Td>
+              <Td>{z.code}</Td>
+              <Td>{z.title_ru}</Td>
+              <Td>{z.active ? "Да" : "Нет"}</Td>
+              <Td>
+                <button className="text-xs text-[var(--color-accent)] hover:underline" onClick={() => toggleActive(z)}>
+                  {z.active ? "Откл" : "Вкл"}
+                </button>
+              </Td>
+            </Tr>
           ))}
         </tbody>
-      </table>
+      </Table>
+      <PaginationBar
+        page={page} totalPages={totalPages} pageSize={pageSize}
+        onPageChange={setPage} onPageSizeChange={setPageSize}
+        totalFiltered={totalFiltered} totalRows={totalRows}
+      />
     </div>
   );
 }

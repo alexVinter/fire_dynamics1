@@ -1,5 +1,9 @@
 import { type FormEvent, useEffect, useState } from "react";
 import { apiGet, apiPatch, apiPost } from "../../api/client";
+import type { ColumnDef } from "../../hooks/useTableData";
+import { useTableData } from "../../hooks/useTableData";
+import { Table, Td, Tr } from "../../ui/Table";
+import { SortableTh, FilterRow, PaginationBar } from "../../ui/TableControls";
 
 interface Technique {
   id: number;
@@ -9,11 +13,34 @@ interface Technique {
   active: boolean;
 }
 
+const COLUMNS: ColumnDef<Technique>[] = [
+  { key: "id", sortable: true },
+  { key: "manufacturer", sortable: true, filterable: true },
+  { key: "model", sortable: true, filterable: true },
+  { key: "series", sortable: true, filterable: true },
+  {
+    key: "active",
+    sortable: true,
+    filterable: true,
+    filterType: "select",
+    filterOptions: [
+      { value: "true", label: "Да" },
+      { value: "false", label: "Нет" },
+    ],
+  },
+];
+
 export default function AdminTechniques() {
   const [items, setItems] = useState<Technique[]>([]);
   const [mfr, setMfr] = useState("");
   const [model, setModel] = useState("");
   const [series, setSeries] = useState("");
+
+  const {
+    view, sort, toggleSort, filters, setFilter,
+    page, setPage, pageSize, setPageSize,
+    totalPages, totalFiltered, totalRows,
+  } = useTableData(items, COLUMNS);
 
   const load = () => apiGet<Technique[]>("/techniques").then(setItems).catch(() => {});
   useEffect(() => { load(); }, []);
@@ -32,28 +59,48 @@ export default function AdminTechniques() {
 
   return (
     <div>
-      <h3>Техника</h3>
       <form onSubmit={handleAdd} style={{ display: "flex", gap: 6, marginBottom: 12 }}>
         <input placeholder="Производитель" value={mfr} onChange={e => setMfr(e.target.value)} required />
         <input placeholder="Модель" value={model} onChange={e => setModel(e.target.value)} required />
         <input placeholder="Серия" value={series} onChange={e => setSeries(e.target.value)} />
         <button type="submit">Добавить</button>
       </form>
-      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
-        <thead><tr>{["ID","Производитель","Модель","Серия","Активен",""].map(h => <th key={h} style={{ textAlign: "left", borderBottom: "1px solid #ccc", padding: 4 }}>{h}</th>)}</tr></thead>
+      <Table>
+        <thead>
+          <tr>
+            <SortableTh columnKey="id" sort={sort} onSort={toggleSort}>ID</SortableTh>
+            <SortableTh columnKey="manufacturer" sort={sort} onSort={toggleSort}>Производитель</SortableTh>
+            <SortableTh columnKey="model" sort={sort} onSort={toggleSort}>Модель</SortableTh>
+            <SortableTh columnKey="series" sort={sort} onSort={toggleSort}>Серия</SortableTh>
+            <SortableTh columnKey="active" sort={sort} onSort={toggleSort}>Активен</SortableTh>
+            <th className="border-b border-[var(--color-border)] bg-gray-50 px-4 py-3" />
+          </tr>
+          <FilterRow columns={COLUMNS} filters={filters} onFilter={setFilter}>
+            <th className="border-b border-[var(--color-border)] bg-gray-50/60 px-4 py-1.5" />
+          </FilterRow>
+        </thead>
         <tbody>
-          {items.map(t => (
-            <tr key={t.id} style={{ opacity: t.active ? 1 : 0.5 }}>
-              <td style={{ padding: 4 }}>{t.id}</td>
-              <td style={{ padding: 4 }}>{t.manufacturer}</td>
-              <td style={{ padding: 4 }}>{t.model}</td>
-              <td style={{ padding: 4 }}>{t.series ?? "—"}</td>
-              <td style={{ padding: 4 }}>{t.active ? "Да" : "Нет"}</td>
-              <td style={{ padding: 4 }}><button onClick={() => toggleActive(t)}>{t.active ? "Откл" : "Вкл"}</button></td>
-            </tr>
+          {view.map(t => (
+            <Tr key={t.id} className={t.active ? "" : "opacity-50"}>
+              <Td>{t.id}</Td>
+              <Td>{t.manufacturer}</Td>
+              <Td>{t.model}</Td>
+              <Td>{t.series ?? "—"}</Td>
+              <Td>{t.active ? "Да" : "Нет"}</Td>
+              <Td>
+                <button className="text-xs text-[var(--color-accent)] hover:underline" onClick={() => toggleActive(t)}>
+                  {t.active ? "Откл" : "Вкл"}
+                </button>
+              </Td>
+            </Tr>
           ))}
         </tbody>
-      </table>
+      </Table>
+      <PaginationBar
+        page={page} totalPages={totalPages} pageSize={pageSize}
+        onPageChange={setPage} onPageSizeChange={setPageSize}
+        totalFiltered={totalFiltered} totalRows={totalRows}
+      />
     </div>
   );
 }

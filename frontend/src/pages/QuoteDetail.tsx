@@ -57,7 +57,7 @@ const DETAIL_TABS = [
 
 interface Props {
   quoteId: number;
-  role: string;
+  role: string | null;
   onBack: () => void;
   onEdit: (id: number) => void;
 }
