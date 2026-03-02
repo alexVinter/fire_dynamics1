@@ -24,8 +24,8 @@ const COLUMNS: ColumnDef<Technique>[] = [
     filterable: true,
     filterType: "select",
     filterOptions: [
-      { value: "true", label: "Да" },
-      { value: "false", label: "Нет" },
+      { value: "true", label: "Активные" },
+      { value: "false", label: "Неактивные" },
     ],
   },
 ];

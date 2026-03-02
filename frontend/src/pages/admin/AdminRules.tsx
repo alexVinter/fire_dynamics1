@@ -18,7 +18,7 @@ interface RuleOut {
 
 const COLUMNS: ColumnDef<RuleOut>[] = [
   { key: "id", sortable: true },
-  { key: "technique_id", sortable: true },
+  { key: "technique_id", sortable: true, filterable: true },
   { key: "version", sortable: true },
   { key: "conditions" },
   { key: "actions" },
@@ -28,8 +28,8 @@ const COLUMNS: ColumnDef<RuleOut>[] = [
     filterable: true,
     filterType: "select",
     filterOptions: [
-      { value: "true", label: "Да" },
-      { value: "false", label: "Нет" },
+      { value: "true", label: "Активные" },
+      { value: "false", label: "Неактивные" },
     ],
   },
 ];

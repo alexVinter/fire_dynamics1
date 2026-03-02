@@ -18,15 +18,15 @@ const COLUMNS: ColumnDef<SKU>[] = [
   { key: "id", sortable: true },
   { key: "code", sortable: true, filterable: true },
   { key: "name", sortable: true, filterable: true },
-  { key: "unit", sortable: true },
+  { key: "unit", sortable: true, filterable: true },
   {
     key: "active",
     sortable: true,
     filterable: true,
     filterType: "select",
     filterOptions: [
-      { value: "true", label: "Да" },
-      { value: "false", label: "Нет" },
+      { value: "true", label: "Активные" },
+      { value: "false", label: "Неактивные" },
     ],
   },
 ];
